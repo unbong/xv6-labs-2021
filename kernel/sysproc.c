@@ -7,6 +7,7 @@
 #include "spinlock.h"
 #include "proc.h"
 
+
 uint64
 sys_exit(void)
 {
@@ -94,4 +95,16 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+
+
+uint64
+sys_trace(void)
+{
+    struct proc *p = myproc();
+
+    p->trace_mask = p->trapframe->a0;
+    if( (1<<22) & p->trace_mask ) printf("%d syscall trace -> 0\n", p->pid );
+
+    return 0;
 }
