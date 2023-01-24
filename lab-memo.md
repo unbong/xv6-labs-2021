@@ -1,4 +1,5 @@
 # syscall 实验笔记
+    *  相关代码 切换到  git checkout syscall
 ## System call tracing
 * 完成trace的功能，需要能够指定mask参数，指定要跟踪的指令
     * 该课程体系下在用户模式调用系统函数的过程如下
