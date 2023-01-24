@@ -655,3 +655,16 @@ procdump(void)
     printf("\n");
   }
 }
+
+uint64
+collect_processes(void )
+{
+    uint64 used_process = 0;
+    for(struct proc * p = proc; p < &proc[NPROC]; p++) {
+        if(p->state == UNUSED)
+            continue;
+        used_process++;
+    }
+
+    return used_process ;
+}

@@ -23,6 +23,7 @@ struct {
   struct run *freelist;
 } kmem;
 
+
 void
 kinit()
 {
@@ -37,6 +38,7 @@ freerange(void *pa_start, void *pa_end)
   p = (char*)PGROUNDUP((uint64)pa_start);
   for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE)
     kfree(p);
+
 }
 
 // Free the page of physical memory pointed at by v,
@@ -79,4 +81,17 @@ kalloc(void)
   if(r)
     memset((char*)r, 5, PGSIZE); // fill with junk
   return (void*)r;
+}
+
+uint64 kfree_memomry( void )
+{
+
+    struct run *r = kmem.freelist;
+    uint64  i =0 ;
+    while(r){
+        i++;
+        r = r->next;
+    }
+
+    return i * PGSIZE;
 }

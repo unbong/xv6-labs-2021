@@ -6,6 +6,7 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "sysinfo.h"
 
 
 uint64
@@ -106,5 +107,27 @@ sys_trace(void)
     p->trace_mask = p->trapframe->a0;
     if( (1<<22) & p->trace_mask ) printf("%d syscall trace -> 0\n", p->pid );
 
+    return 0;
+}
+
+uint64
+sys_info(void)
+{
+    uint64 sysinfo_pointer=0;
+    struct proc* p = myproc();
+    struct sysinfo si;
+    // get sysinfo point
+    if( argaddr(0, &sysinfo_pointer) < 0)
+    {
+        printf("sys call trace error\n");
+        return 1;
+    }
+    //struct sysinfo * sysinfo = (struct sysinfo *) sysinfo_pointer ;
+
+    si.freemem = kfree_memomry();
+    si.nproc = collect_processes( );
+
+    if(copyout(p->pagetable, sysinfo_pointer, (char *)&si, sizeof(si)) < 0)
+        return -1;
     return 0;
 }
