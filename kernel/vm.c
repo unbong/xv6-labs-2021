@@ -275,6 +275,7 @@ freewalk(pagetable_t pagetable)
       freewalk((pagetable_t)child);
       pagetable[i] = 0;
     } else if(pte & PTE_V){
+
       panic("freewalk: leaf");
     }
   }
@@ -431,4 +432,35 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
   } else {
     return -1;
   }
+}
+
+void vmprint_helper(pagetable_t pg, int depth, char * dots )
+{
+    if(depth > 2)
+        return  ;
+    pte_t  pte;
+    uint64 pa;
+    for(int i = 0; i < 512; i++)
+    {
+        pte= pg[i];
+        pa = PTE2PA(pte);
+        if( (pte & PTE_V) )
+        //if(pg[i] != 0)
+        {
+
+            for (int j = 0; j < depth; ++j) {
+                printf(".. ");
+            }
+            printf("%s%d: pte %p pa %p\n", dots, i, pte, pa);
+
+            vmprint_helper((pagetable_t )pa, depth+1, dots );
+        }
+    }
+}
+
+void vmprint(pagetable_t pagetable)
+{
+    printf("page table %p \n", pagetable);
+
+    vmprint_helper(pagetable, 0, "..");
 }

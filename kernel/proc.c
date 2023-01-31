@@ -196,6 +196,22 @@ proc_pagetable(struct proc *p)
     return 0;
   }
 
+      // 创建一个页表 物理内存的页 并写 pid
+      char*  pa = kalloc();
+
+      //memset(pa, pid, sizeof(int));
+      // 创建一个页表 映射USYSCALL 与新创建的物理页 权限设定为 只读
+      if( mappages(pagetable, USYSCALL,  PGSIZE, (uint64 )pa, PTE_R | PTE_U  ) < 0)
+      {
+          uvmunmap(pagetable, TRAMPOLINE, 1, 0);
+          uvmfree(pagetable, 0);
+          return 0;
+      }
+      struct usyscall upid ;
+      upid.pid = p->pid;
+      * (struct usyscall * ) pa = upid;
+      //memset(pa, upid.pid, sizeof(struct usyscall));
+
   return pagetable;
 }
 
@@ -206,6 +222,7 @@ proc_freepagetable(pagetable_t pagetable, uint64 sz)
 {
   uvmunmap(pagetable, TRAMPOLINE, 1, 0);
   uvmunmap(pagetable, TRAPFRAME, 1, 0);
+  uvmunmap(pagetable, USYSCALL, 1, 0);
   uvmfree(pagetable, sz);
 }
 

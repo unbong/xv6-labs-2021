@@ -81,6 +81,61 @@ int
 sys_pgaccess(void)
 {
   // lab pgtbl: your code here.
+  uint64 buf_addr  = 0;
+  if( argaddr(0, &buf_addr) <0 )
+      return -1;
+  char * buf = (char * ) buf_addr;
+  int size =0;
+  if( argint(1, &size) <0)
+      return  -1;
+  if (size > 64 )
+  {
+      printf("size must less than 64.\n");
+      return -1;
+  }
+  uint64 bitmask =0;
+  if( argaddr(2, &bitmask) < 0)
+      return -1;
+
+  uint64 mask = 0;
+
+  // walk to find is accessed
+  //pagetable_t  pt = myproc()->pagetable;
+  char * item ;
+    //vmprint(myproc()->pagetable);
+  for(int i = 0; i < size; i++)
+  {
+      pagetable_t  pt = myproc()->pagetable;
+
+      item = buf + i*PGSIZE;
+
+      pte_t * pte;
+      for(int level = 2; level >= 0; level--)
+      {
+          // 找到页表条目
+          pte = &pt[PX(level,item )];
+          if( (*pte) & PTE_V)
+          {
+              pt = (pagetable_t )PTE2PA(*pte);
+          }
+          else
+          {
+              pte = 0;
+              break;
+          }
+      }
+
+      //printf("pte: %p\n", pte);
+      if( (*pte) & PTE_A)
+      {
+          *pte = (*pte) & ~(PTE_A);
+          mask = (mask | 1l << i);
+      }
+
+  }
+
+  printf("mask: %p\n", mask);
+  copyout(myproc()->pagetable, bitmask, (char *)&mask, sizeof(uint64));
   return 0;
 }
 #endif
