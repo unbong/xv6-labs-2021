@@ -5,3 +5,6 @@
 
 * chapter3 页表
     * [页表](memos/virtual-memory.md)
+
+* chapter4 陷阱 系统调用
+    * [陷阱-系统调用](memos/chapter4-trap-system-call.md)
