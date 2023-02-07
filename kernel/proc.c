@@ -291,7 +291,9 @@ fork(void)
 
   // copy saved user registers.
   *(np->trapframe) = *(p->trapframe);
-
+  np->interval = p->interval;
+  np->intterval_count = p ->intterval_count;
+  np->fn = p->fn;
   // Cause fork to return 0 in the child.
   np->trapframe->a0 = 0;
 
@@ -653,4 +655,20 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+// print call trace address
+void backtrace(void)
+{
+    uint64 addr;
+    addr = r_fp();
+
+    uint64 stack_top = PGROUNDUP(addr);
+    uint64  bottom = PGROUNDDOWN(addr);
+    while(addr < stack_top && addr > bottom)
+    {
+
+        printf("%p\n", *(uint64*)(addr - 8));
+        addr = *(uint64*)(addr-16);
+    }
 }
