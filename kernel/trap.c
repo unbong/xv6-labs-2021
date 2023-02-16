@@ -67,11 +67,35 @@ usertrap(void)
     syscall();
   } else if((which_dev = devintr()) != 0){
     // ok
-  } else {
-    printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
-    printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
-    p->killed = 1;
   }
+  else if(r_scause() == 15 || r_scause() == 13) {
+    // store page fault || load page fault
+    uint64 fault_addr = r_stval();                  // 缺页地址
+    pte_t * pte = walk(p->pagetable, fault_addr,0); // 缺页页表条目
+    uint64 pa = PTE2PA(*pte);                       // 物理地址
+    uint64 flags = ((*pte |  PTE_W) & ~PTE_F);
+    *pte = *pte & ~PTE_F;
+    if(pa == 0) {
+        printf("usertrap: walk failed. va:%p, pid:%d\n", pa, p->pid);
+        exit(-1);
+    }
+
+    char* n_pa = kalloc();
+
+    // 引用计数 > 1时才会是fork后store page fault的情况，需要拷贝数据，并且计数减1
+    if(kgetparef(pa) > 1) {
+        memmove(n_pa, (char *)pa, PGSIZE);
+        ksubparef(pa);
+    }
+
+    mappages(p->pagetable, fault_addr, PGSIZE, (uint64)n_pa,  flags);
+    //
+  }else {
+          printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
+          printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+          p->killed = 1;
+      }
+
 
   if(p->killed)
     exit(-1);

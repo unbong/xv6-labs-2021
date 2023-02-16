@@ -18,6 +18,11 @@ struct run {
   struct run *next;
 };
 
+struct page_ref{
+    short page_ref_counts[32768];
+    struct spinlock lock;
+}page_ref;
+
 struct {
   struct spinlock lock;
   struct run *freelist;
@@ -27,6 +32,7 @@ void
 kinit()
 {
   initlock(&kmem.lock, "kmem");
+  initlock(&page_ref.lock, "page_ref");
   freerange(end, (void*)PHYSTOP);
 }
 
@@ -35,8 +41,11 @@ freerange(void *pa_start, void *pa_end)
 {
   char *p;
   p = (char*)PGROUNDUP((uint64)pa_start);
-  for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE)
-    kfree(p);
+  for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE){
+      kaddparef((uint64)p);
+      kfree(p);
+  }
+
 }
 
 // Free the page of physical memory pointed at by v,
@@ -55,11 +64,18 @@ kfree(void *pa)
   memset(pa, 1, PGSIZE);
 
   r = (struct run*)pa;
+  if(kgetparef((uint64)pa) == 1)
+  {
+      acquire(&kmem.lock);
+      r->next = kmem.freelist;
+      kmem.freelist = r;
+      release(&kmem.lock);
+  }
+  else
+  {
+      ksubparef((uint64)pa);
+  }
 
-  acquire(&kmem.lock);
-  r->next = kmem.freelist;
-  kmem.freelist = r;
-  release(&kmem.lock);
 }
 
 // Allocate one 4096-byte page of physical memory.
@@ -79,4 +95,46 @@ kalloc(void)
   if(r)
     memset((char*)r, 5, PGSIZE); // fill with junk
   return (void*)r;
+}
+
+
+
+/**
+ * 物理页引用计数加 1
+ * @param pa 物理页地址
+ * @return
+ */
+int kaddparef(uint64 pa)
+{
+    if(pa < KERNBASE)
+        panic("kaddparef: invalid pa\n");
+    uint64 index = (pa-KERNBASE)/PGSIZE;
+    acquire(&page_ref.lock);
+    page_ref.page_ref_counts[index]++;
+    release(&page_ref.lock);
+    return 0;
+}
+
+/**
+ * 返回物理页引用计数
+ * @param pa
+ * @return
+ */
+int kgetparef(uint64 pa)
+{
+    if(pa < KERNBASE)
+        panic("kgetparef: invalid pa\n");
+    uint64 index = (pa-KERNBASE)/PGSIZE;
+    return page_ref.page_ref_counts[index];
+}
+
+int ksubparef(uint64 pa)
+{
+    if(pa < KERNBASE)
+        panic("kaddparef: invalid pa\n");
+    uint64 index = (pa-KERNBASE)/PGSIZE;
+    acquire(&page_ref.lock);
+    page_ref.page_ref_counts[index]--;
+    release(&page_ref.lock);
+    return 0;
 }
