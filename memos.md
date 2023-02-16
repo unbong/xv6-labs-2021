@@ -11,3 +11,7 @@
 
 * chapter5 中断 设备驱动
     * [中断 设备驱动](memos/chapter5-interupt-device_driver.md)
+
+* chapter6 锁
+    * [锁](memos/chapter6-lock.md)
+
