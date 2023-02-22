@@ -15,3 +15,7 @@
 * chapter6 锁
     * [锁](memos/chapter6-lock.md)
 
+* chapter7 调度
+    * [锁](memos/chapter7-scheduling.md)
+
+
