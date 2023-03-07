@@ -10,6 +10,13 @@
 #define STACK_SIZE  8192
 #define MAX_THREAD  4
 
+static inline uint64
+r_sp()
+{
+    uint64 x;
+    asm volatile("mv %0, sp" : "=r" (x) );
+    return x;
+}
 
 struct thread {
   char       stack[STACK_SIZE]; /* the thread's stack */
@@ -29,6 +36,7 @@ thread_init(void)
   // a RUNNABLE thread.
   current_thread = &all_thread[0];
   current_thread->state = RUNNING;
+
 }
 
 void 
@@ -58,10 +66,18 @@ thread_schedule(void)
     next_thread->state = RUNNING;
     t = current_thread;
     current_thread = next_thread;
+
     /* YOUR CODE HERE
      * Invoke thread_switch to switch from t to next_thread:
      * thread_switch(??, ??);
      */
+    // t->state= RUNNABLE;
+    // uint64 sp_addr = r_sp();
+    // copystack((void*)sp_addr, t->stack+4096);
+
+    //memmove(next_thread->stack+8 , (void*)r_sp(), sizeof (uint64));
+    thread_switch((uint64)&t->stack, (uint64)&next_thread->stack);
+
   } else
     next_thread = 0;
 }
@@ -76,6 +92,8 @@ thread_create(void (*func)())
   }
   t->state = RUNNABLE;
   // YOUR CODE HERE
+  memmove(t->stack, &func, sizeof (uint64));  //    将函数指针存储到栈中 占8字节
+  //memmove(t->stack+8 , (void*)r_sp(), sizeof (uint64));
 }
 
 void 

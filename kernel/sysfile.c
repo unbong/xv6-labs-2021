@@ -393,7 +393,7 @@ sys_chdir(void)
   char path[MAXPATH];
   struct inode *ip;
   struct proc *p = myproc();
-  
+
   begin_op();
   if(argstr(0, path, MAXPATH) < 0 || (ip = namei(path)) == 0){
     end_op();
@@ -482,5 +482,44 @@ sys_pipe(void)
     fileclose(wf);
     return -1;
   }
+  return 0;
+}
+
+
+uint64  sys_copystack()
+{
+  uint64 copy_src;
+  argaddr(0, &copy_src);
+  uint64 copy_dst;
+  argaddr(1, &copy_dst);
+
+  struct proc *p = myproc();
+  uint64 pa_src = walkaddr(p->pagetable, copy_src);
+  if(pa_src == 0) panic("copy stack failed.");
+
+  uint64 pa_dst = walkaddr(p->pagetable, copy_dst);
+  if(pa_dst == 0) panic("copy stack dst failed.");
+
+  memmove((void *)pa_dst, (void *)pa_src, PGSIZE);
+
+  return 0;
+}
+
+uint64 sys_restorestack()
+{
+  uint64 copy_src;
+  argaddr(0, &copy_src);
+  uint64 copy_dst;
+  argaddr(1, &copy_dst);
+
+  struct proc *p = myproc();
+  uint64 pa_src = walkaddr(p->pagetable, copy_src);
+  if(pa_src == 0) panic("restore stack failed.");
+
+  uint64 pa_dst = walkaddr(p->pagetable, copy_dst);
+  if(pa_dst == 0) panic("restore stack dst failed.");
+
+  memmove((void *)pa_src, (void *)pa_dst, PGSIZE);
+
   return 0;
 }
